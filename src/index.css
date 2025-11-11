@@ -1,0 +1,151 @@
+/* --- Activar Tailwind --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Restaurar tus estilos globales originales --- */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+button:hover {
+  border-color: #646cff;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* ------------------------------------------------------------------
+   🎨  ESTILOS PERSONALIZADOS SOLO PARA EL PANEL DEL PACIENTE
+------------------------------------------------------------------ */
+.paciente-dashboard {
+  @apply bg-gray-50 min-h-screen flex flex-col;
+}
+
+/* Header superior */
+.paciente-dashboard header {
+  @apply bg-white shadow-sm flex justify-between items-center px-8 py-4 border-b border-gray-200;
+}
+
+/* Título principal */
+.paciente-dashboard h2 {
+  @apply text-3xl font-bold text-center text-sky-600 mb-10;
+}
+
+/* Tarjetas principales */
+.paciente-card {
+  @apply bg-white shadow-md rounded-2xl p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1;
+}
+
+.paciente-card h3 {
+  @apply text-lg font-semibold text-gray-800 mb-2;
+}
+
+.paciente-card p {
+  @apply text-gray-600 text-sm mb-4;
+}
+
+.paciente-card button {
+  @apply bg-sky-600 text-white px-5 py-2 rounded-lg hover:bg-sky-700 transition;
+}
+
+/* Íconos centrados */
+.paciente-card svg {
+  @apply mx-auto mb-4 text-sky-600;
+}
+
+/* ✅ Nuevo contenedor de tarjetas (sin usar @apply grid) */
+.paciente-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 0 auto;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Animación de entrada */
+.paciente-card {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+input,
+select,
+textarea {
+  background-color: #ffffff !important;
+  color: #111827 !important; /* texto negro */
+}
+
+input::placeholder {
+  color: #9ca3af !important; /* gris suave */
+}
