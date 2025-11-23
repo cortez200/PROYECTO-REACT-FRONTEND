@@ -6,6 +6,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import PacienteDashboard from "./pages/PacienteDashboard";
+import AdminDashboard from "./admin/pages/AdminDashboard";
+import AdminPacientes from "./admin/pages/AdminPacientes";
+import AdminCitas from "./admin/pages/AdminCitas";
+import AdminRecordatorios from "./admin/pages/AdminRecordatorios";
+import AdminHistoriales from "./admin/pages/AdminHistoriales";
 import "./index.css";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -14,18 +19,21 @@ import "react-datepicker/dist/react-datepicker.css";
  * y con roles específicos.
  */
 function PrivateRoute({ children, allowedRoles }) {
-  // Coincide con la clave usada en Login.jsx
-  const user = JSON.parse(localStorage.getItem("usuario"));
+  const adminUser = JSON.parse(localStorage.getItem("adminUsuario") || "null");
+  const patientUser = JSON.parse(localStorage.getItem("pacienteUsuario") || "null");
+  const generic = JSON.parse(localStorage.getItem("usuario") || "null");
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  let user = null;
+  if (allowedRoles?.includes("ADMIN")) {
+    user = adminUser || (generic?.tipo === "ADMIN" ? generic : null);
+  } else if (allowedRoles?.includes("PACIENTE")) {
+    user = patientUser || (generic?.tipo === "PACIENTE" ? generic : null);
+  } else {
+    user = generic || adminUser || patientUser;
   }
 
-  // Verificar rol (el backend devuelve "tipo")
-  if (allowedRoles && !allowedRoles.includes(user.tipo)) {
-    return <Navigate to="/login" replace />;
-  }
-
+  if (!user) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.tipo)) return <Navigate to="/login" replace />;
   return children;
 }
 
@@ -50,6 +58,48 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           element={
             <PrivateRoute allowedRoles={["PACIENTE"]}>
               <PacienteDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Panel Administrador protegido */}
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/pacientes"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminPacientes />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/citas"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminCitas />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/recordatorios"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminRecordatorios />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/historial"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminHistoriales />
             </PrivateRoute>
           }
         />

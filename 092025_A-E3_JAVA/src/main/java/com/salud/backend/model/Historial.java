@@ -18,6 +18,12 @@ public class Historial {
     @JoinColumn(name = "paciente_id")
     private Usuario paciente;
 
+    // Nombre del archivo PDF asociado (opcional)
+    private String archivoNombre;
+
+    // Ruta del archivo PDF en el servidor (opcional)
+    private String archivoRuta;
+
     public Historial() {}
 
     public Historial(String descripcion, LocalDate fecha, Usuario paciente) {
@@ -37,4 +43,10 @@ public class Historial {
 
     public Usuario getPaciente() { return paciente; }
     public void setPaciente(Usuario paciente) { this.paciente = paciente; }
+
+    public String getArchivoNombre() { return archivoNombre; }
+    public void setArchivoNombre(String archivoNombre) { this.archivoNombre = archivoNombre; }
+
+    public String getArchivoRuta() { return archivoRuta; }
+    public void setArchivoRuta(String archivoRuta) { this.archivoRuta = archivoRuta; }
 }

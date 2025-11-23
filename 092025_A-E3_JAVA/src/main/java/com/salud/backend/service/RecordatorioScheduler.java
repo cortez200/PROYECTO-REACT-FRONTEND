@@ -38,7 +38,7 @@ public class RecordatorioScheduler {
     @Scheduled(fixedRate = 30000)
     public void enviarRecordatorios() {
         LocalDateTime ahora = LocalDateTime.now(ZONA_PERU);
-        List<Recordatorio> pendientes = recordatorioRepository.findByNotificadoFalse();
+        List<Recordatorio> pendientes = recordatorioRepository.findByActivoTrueAndNotificadoFalse();
 
         for (Recordatorio r : pendientes) {
             if (r.getFechaHora() == null) continue;
@@ -81,7 +81,7 @@ public class RecordatorioScheduler {
     public void enviarAlertasNoConfirmadas() {
         LocalDateTime ahora = LocalDateTime.now(ZONA_PERU);
         List<Recordatorio> porAlertar =
-                recordatorioRepository.findByNotificadoTrueAndTomadoFalseAndAlertaEnviadaFalse();
+                recordatorioRepository.findByActivoTrueAndNotificadoTrueAndTomadoFalseAndAlertaEnviadaFalse();
 
         for (Recordatorio r : porAlertar) {
             if (r.getNotificadoAt() == null) continue;

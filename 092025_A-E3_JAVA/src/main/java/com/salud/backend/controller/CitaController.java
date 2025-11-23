@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/citas")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"})
 public class CitaController {
 
     @Autowired
@@ -87,16 +87,20 @@ public class CitaController {
                     motivo
             );
 
-            emailService.enviarCorreo(usuarioOpt.get().getCorreo(), asunto, mensaje);
+            try {
+                emailService.enviarCorreo(usuarioOpt.get().getCorreo(), asunto, mensaje);
+            } catch (Exception mailError) {
+                System.err.println("⚠️ Error al enviar correo de confirmación: " + mailError.getMessage());
+            }
 
-            return ResponseEntity.ok("✅ Cita creada correctamente y correo enviado.");
+            return ResponseEntity.ok("✅ Cita creada correctamente.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("❌ Error al registrar la cita: " + e.getMessage());
         }
     }
 
-    // ✅ Listar citas por usuario
+    // Listar citas por usuario
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<?> listarPorUsuario(@PathVariable Long usuarioId) {
         try {
@@ -156,4 +160,119 @@ public class CitaController {
 
         return ResponseEntity.ok("✅ Cita eliminada correctamente");
     }
+
+    // ✅ Listar todas las citas (para administrador)
+    @GetMapping
+    public ResponseEntity<?> listarTodas() {
+        try {
+            List<Cita> citas = citaRepository.findAll();
+            return ResponseEntity.ok(citas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error al obtener todas las citas.");
+        }
+    }
+
+    // ✅ Actualizar cita y enviar correo
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarCita(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            Optional<Cita> citaOpt = citaRepository.findById(id);
+            if (citaOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("❌ Cita no encontrada");
+            }
+
+            Cita cita = citaOpt.get();
+            Usuario usuario = cita.getUsuario(); // paciente asignado
+
+            // Guardar valores anteriores para mostrar en el correo
+            LocalDate fechaAnterior = cita.getFecha();
+            LocalTime horaAnterior = cita.getHora();
+
+            // Actualizar campos
+            if (body.containsKey("fecha")) {
+                String fechaStr = body.get("fecha").toString();
+                cita.setFecha(LocalDate.parse(fechaStr));
+            }
+
+            if (body.containsKey("hora")) {
+                String horaStr = body.get("hora").toString();
+                cita.setHora(LocalTime.parse(horaStr));
+            }
+
+            if (body.containsKey("medico")) {
+                cita.setMedico(body.get("medico").toString());
+            }
+
+            if (body.containsKey("motivo")) {
+                cita.setMotivo(body.get("motivo").toString());
+            }
+
+            if (body.containsKey("usuarioId")) {
+                Long usuarioId = Long.parseLong(body.get("usuarioId").toString());
+                Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
+                if (usuarioOpt.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body("❌ Usuario no encontrado");
+                }
+                cita.setUsuario(usuarioOpt.get());
+                usuario = usuarioOpt.get();
+            }
+
+            citaRepository.save(cita);
+
+            // ✉️ Enviar correo de reprogramación
+            try {
+                String asunto = "📅 Tu cita ha sido reprogramada - Salud Digital";
+
+                String mensaje = """
+                    <div style='font-family: Arial, sans-serif; padding: 20px; background: #f1f7ff; border-radius: 10px;'>
+                        <h2 style='color:#0284c7;'>Cita Reprogramada</h2>
+                        <p>Hola <b>%s</b>,</p>
+                        <p>Tu cita médica ha sido modificada con los siguientes detalles:</p>
+
+                        <h3>📝 Antes:</h3>
+                        <ul>
+                            <li><b>Fecha:</b> %s</li>
+                            <li><b>Hora:</b> %s</li>
+                        </ul>
+
+                        <h3>📅 Nueva programación:</h3>
+                        <ul>
+                            <li><b>Fecha:</b> %s</li>
+                            <li><b>Hora:</b> %s</li>
+                            <li><b>Médico:</b> %s</li>
+                            <li><b>Motivo:</b> %s</li>
+                        </ul>
+
+                        <p>Si no reconoces este cambio, por favor comunícate con la clínica.</p>
+
+                        <hr/>
+                        <p style='font-size:12px;color:#555;'>Salud Digital © 2025</p>
+                    </div>
+                    """.formatted(
+                        usuario.getNombre(),
+                        fechaAnterior,
+                        horaAnterior,
+                        cita.getFecha(),
+                        cita.getHora(),
+                        cita.getMedico(),
+                        cita.getMotivo()
+                );
+
+                emailService.enviarCorreo(usuario.getCorreo(), asunto, mensaje);
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al enviar correo de reprogramación: " + e.getMessage());
+            }
+
+            return ResponseEntity.ok("✅ Cita actualizada correctamente y correo enviado.");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("❌ Error al actualizar la cita: " + e.getMessage());
+        }
+    }
 }
+
+

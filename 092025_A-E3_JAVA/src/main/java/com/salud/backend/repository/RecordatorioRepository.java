@@ -20,4 +20,10 @@ public interface RecordatorioRepository extends JpaRepository<Recordatorio, Long
 
     // ✅ Recordatorios ya notificados pero aún no tomados (para alertas de seguimiento)
     List<Recordatorio> findByNotificadoTrueAndTomadoFalseAndAlertaEnviadaFalse();
+
+    // ✅ Solo activos: pendientes de notificar
+    List<Recordatorio> findByActivoTrueAndNotificadoFalse();
+
+    // ✅ Solo activos: ya notificados pero no tomados y sin alerta enviada
+    List<Recordatorio> findByActivoTrueAndNotificadoTrueAndTomadoFalseAndAlertaEnviadaFalse();
 }

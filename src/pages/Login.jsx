@@ -20,11 +20,23 @@ function Login() {
 
       // ✅ Si el backend devuelve correctamente el JSON
       if (res.status === 200 && res.data && res.data.mensaje?.includes("exitoso")) {
-        // Guardamos el usuario completo en localStorage
-        localStorage.setItem("usuario", JSON.stringify(res.data));
+        const data = res.data;
+        const tipo = data.tipo;
+
+        // Guardar por rol para permitir sesiones simultáneas
+        if (tipo === "ADMIN") {
+          localStorage.setItem("adminUsuario", JSON.stringify(data));
+        } else if (tipo === "PACIENTE") {
+          localStorage.setItem("pacienteUsuario", JSON.stringify(data));
+        }
+        // Mantener compatibilidad
+        localStorage.setItem("usuario", JSON.stringify(data));
+
+        // Redirección según rol
+        const destino = tipo === "ADMIN" ? "/admin" : tipo === "PACIENTE" ? "/paciente" : "/";
 
         setMensaje("✅ Inicio de sesión exitoso");
-        setTimeout(() => navigate("/paciente"), 1200); // pequeña pausa de 1.2s
+        setTimeout(() => navigate(destino), 800);
       } else {
         setMensaje("❌ Credenciales incorrectas");
       }
@@ -105,6 +117,13 @@ function Login() {
           ¿No tienes cuenta?{" "}
           <Link to="/register" className="text-sky-600 hover:underline">
             Regístrate
+          </Link>
+        </p>
+
+        <p className="mt-2 text-sm text-gray-600">
+          ¿Olvidaste tu contraseña?{" "}
+          <Link to="/forgot-password" className="text-sky-600 hover:underline">
+            Recuperar
           </Link>
         </p>
 

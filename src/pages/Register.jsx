@@ -7,7 +7,7 @@ function Register() {
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
-  const [tipo, setTipo] = useState("PACIENTE"); // Valor por defecto
+  const [tipo, setTipo] = useState("PACIENTE");
   const [mensaje, setMensaje] = useState("");
   const navigate = useNavigate();
 
@@ -94,19 +94,7 @@ function Register() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              Tipo de usuario
-            </label>
-            <select
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none text-gray-800"
-            >
-              <option value="PACIENTE">Paciente</option>
-              <option value="FAMILIAR">Familiar</option>
-            </select>
-          </div>
+          <input type="hidden" value={tipo} readOnly />
 
           <button
             type="submit"

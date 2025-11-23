@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface HistorialRepository extends JpaRepository<Historial, Long> {
     List<Historial> findByPacienteId(Long pacienteId);
+
+    java.util.Optional<Historial> findFirstByPacienteIdOrderByIdDesc(Long pacienteId);
 }

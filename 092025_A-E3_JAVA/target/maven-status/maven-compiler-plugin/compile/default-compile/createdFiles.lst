@@ -25,6 +25,7 @@ com\salud\backend\BackendApplication.class
 com\salud\backend\service\CitaService.class
 com\salud\backend\controller\CitaController.class
 com\salud\backend\config\SeguridadConfig.class
+com\salud\backend\dto\HistorialAdminResponse.class
 com\salud\backend\model\Familiar.class
 com\salud\backend\model\Usuario.class
 com\salud\backend\dto\FamiliarRequest.class

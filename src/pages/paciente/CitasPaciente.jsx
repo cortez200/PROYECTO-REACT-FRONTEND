@@ -27,25 +27,42 @@ function CitasPaciente() {
   const [citas, setCitas] = useState([]);
 
   const horasDisponibles = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00"];
-  const doctores = ["Dr. Luis Paredes", "Dr. Andrea Ríos", "Dr. Julio Medina"];
+  const doctores = ["Dr. Luis Paredes", "Dra. Andrea Ríos", "Dr. Julio Medina"];
 
   // Obtener usuario
   useEffect(() => {
     const u =
+      JSON.parse(localStorage.getItem("pacienteUsuario")) ||
       JSON.parse(localStorage.getItem("usuario")) ||
       JSON.parse(localStorage.getItem("user"));
     if (u) setUsuario(u);
   }, []);
 
-  // Cargar citas del usuario
+  // (Eliminado) Carga dinámica de doctores desde backend
+
+  // Refrescar citas automáticamente cada 5 segundos
   useEffect(() => {
-    if (usuario?.id) {
+    const cargarCitas = () => {
+      const u =
+        JSON.parse(localStorage.getItem("pacienteUsuario")) ||
+        JSON.parse(localStorage.getItem("usuario")) ||
+        JSON.parse(localStorage.getItem("user"));
+      const id = u?.id;
+      if (!id) return;
       axios
-        .get(`http://localhost:8080/api/citas/usuario/${usuario.id}`)
+        .get(`http://localhost:8080/api/citas/usuario/${id}`)
         .then((res) => setCitas(res.data))
         .catch(() => setCitas([]));
-    }
-  }, [usuario]);
+    };
+
+    cargarCitas(); // primera carga
+
+    const intervalo = setInterval(() => {
+      cargarCitas(); // refrescar cada 5 segundos
+    }, 5000);
+
+    return () => clearInterval(intervalo); // limpiar intervalo al salir
+  }, []);
 
   const toISODateLocal = (d) => {
     const y = d.getFullYear();
@@ -95,6 +112,11 @@ function CitasPaciente() {
           `http://localhost:8080/api/citas/usuario/${usuario.id}`
         );
         setCitas(data);
+
+        // 🧾 Generar/actualizar PDF del historial del paciente para el admin
+        try {
+          await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
+        } catch (_) {}
       } else if (res.data.includes("❌")) {
         Swal.fire({
           icon: "error",
@@ -110,11 +132,12 @@ function CitasPaciente() {
           confirmButtonColor: "#0ea5e9",
         });
       }
-    } catch {
+    } catch (err) {
+      const msg = err?.response?.data || "No se pudo conectar con el servidor.";
       Swal.fire({
         icon: "error",
-        title: "Error al conectar",
-        text: "No se pudo conectar con el servidor.",
+        title: msg.toString().includes("❌") ? "Error" : "Error al conectar",
+        text: msg.toString().replace("❌", "").trim(),
         confirmButtonColor: "#ef4444",
       });
     }
@@ -147,6 +170,11 @@ function CitasPaciente() {
             text: "Tu cita ha sido eliminada correctamente.",
             confirmButtonColor: "#10b981",
           });
+
+          // 🧾 Actualizar PDF del historial en el servidor
+          try {
+            await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
+          } catch (_) {}
         } else {
           Swal.fire({
             icon: "error",

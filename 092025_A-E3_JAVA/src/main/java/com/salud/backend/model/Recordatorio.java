@@ -27,6 +27,9 @@ public class Recordatorio {
     // ✅ Ya se envió la alerta de “no confirmado”
     private boolean alertaEnviada;
 
+    // ✅ Estado del recordatorio (activo/desactivado)
+    private boolean activo = true;
+
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
@@ -60,6 +63,9 @@ public class Recordatorio {
 
     public boolean isAlertaEnviada() { return alertaEnviada; }
     public void setAlertaEnviada(boolean alertaEnviada) { this.alertaEnviada = alertaEnviada; }
+
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }

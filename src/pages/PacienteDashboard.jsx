@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 
 function PacienteDashboard() {
   const navigate = useNavigate();
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const usuario = JSON.parse(localStorage.getItem("pacienteUsuario")) || JSON.parse(localStorage.getItem("usuario"));
   const [saludo, setSaludo] = useState("");
 
   // Saludo dinámico
@@ -47,7 +47,7 @@ function PacienteDashboard() {
 
           <button
             onClick={() => {
-              localStorage.removeItem("usuario");
+              localStorage.removeItem("pacienteUsuario");
               navigate("/login");
             }}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-1 transition"

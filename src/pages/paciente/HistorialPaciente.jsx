@@ -20,6 +20,7 @@ export default function HistorialPaciente() {
 
   useEffect(() => {
     const u =
+      JSON.parse(localStorage.getItem("pacienteUsuario")) ||
       JSON.parse(localStorage.getItem("usuario")) ||
       JSON.parse(localStorage.getItem("user"));
     setUsuario(u || null);
@@ -167,6 +168,12 @@ export default function HistorialPaciente() {
       doc.save(
         `Historial_${usuario?.nombre?.replace(/\s+/g, "_") || "Paciente"}.pdf`
       );
+
+      if (usuario?.id) {
+        axios
+          .post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`)
+          .catch(() => {});
+      }
     } catch (error) {
       console.error("❌ Error generando PDF:", error);
       alert("Error al generar el PDF. Revisa la consola.");

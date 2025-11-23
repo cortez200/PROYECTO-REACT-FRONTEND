@@ -12,7 +12,7 @@ export default function NotificarFamiliares() {
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem("usuario")) || JSON.parse(localStorage.getItem("user"));
+    const u = JSON.parse(localStorage.getItem("pacienteUsuario")) || JSON.parse(localStorage.getItem("usuario")) || JSON.parse(localStorage.getItem("user"));
     setUsuario(u || null);
     if (u?.id) cargarFamiliares(u.id);
   }, []);

@@ -38,6 +38,7 @@ export default function RecordatoriosPaciente() {
 
   useEffect(() => {
     const u =
+      JSON.parse(localStorage.getItem("pacienteUsuario")) ||
       JSON.parse(localStorage.getItem("usuario")) ||
       JSON.parse(localStorage.getItem("user"));
     setUsuario(u || null);
@@ -79,6 +80,12 @@ export default function RecordatoriosPaciente() {
         setHora("08:00");
         setAmpm("AM");
         recargar();
+        // 🧾 Generar/actualizar el PDF del historial para que el admin vea el cambio
+        try {
+          await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
+        } catch (_) {
+          // Silenciar errores de generación para no bloquear la UX del paciente
+        }
       }
     } catch {
       Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
@@ -132,6 +139,11 @@ export default function RecordatoriosPaciente() {
       });
 
       recargar();
+
+      // 🧾 Actualizar el PDF del historial en el servidor
+      try {
+        await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
+      } catch (_) {}
     } catch {
       Swal.fire("Error", "No se pudo actualizar el recordatorio.", "error");
     }
