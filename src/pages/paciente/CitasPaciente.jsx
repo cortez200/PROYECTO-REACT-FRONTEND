@@ -18,6 +18,7 @@ registerLocale("es", es);
 
 function CitasPaciente() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [usuario, setUsuario] = useState(null);
   const [fecha, setFecha] = useState(null);
@@ -33,36 +34,32 @@ function CitasPaciente() {
   useEffect(() => {
     const u =
       JSON.parse(localStorage.getItem("pacienteUsuario")) ||
-      JSON.parse(localStorage.getItem("usuario")) ||
-      JSON.parse(localStorage.getItem("user"));
-    if (u) setUsuario(u);
+      JSON.parse(localStorage.getItem("usuario"));
+
+    if (!u) {
+      navigate("/login");
+      return;
+    }
+
+    setUsuario(u);
   }, []);
 
-  // (Eliminado) Carga dinámica de doctores desde backend
-
-  // Refrescar citas automáticamente cada 5 segundos
+  // Cargar citas del paciente
   useEffect(() => {
+    if (!usuario) return;
+
     const cargarCitas = () => {
-      const u =
-        JSON.parse(localStorage.getItem("pacienteUsuario")) ||
-        JSON.parse(localStorage.getItem("usuario")) ||
-        JSON.parse(localStorage.getItem("user"));
-      const id = u?.id;
-      if (!id) return;
       axios
-        .get(`http://localhost:8080/api/citas/usuario/${id}`)
+        .get(`${API_URL}/api/citas/usuario/${usuario.id}`)
         .then((res) => setCitas(res.data))
         .catch(() => setCitas([]));
     };
 
-    cargarCitas(); // primera carga
+    cargarCitas();
 
-    const intervalo = setInterval(() => {
-      cargarCitas(); // refrescar cada 5 segundos
-    }, 5000);
-
-    return () => clearInterval(intervalo); // limpiar intervalo al salir
-  }, []);
+    const intervalo = setInterval(cargarCitas, 5000);
+    return () => clearInterval(intervalo);
+  }, [usuario]);
 
   const toISODateLocal = (d) => {
     const y = d.getFullYear();
@@ -71,13 +68,10 @@ function CitasPaciente() {
     return `${y}-${m}-${day}`;
   };
 
+  // Crear cita
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!usuario) {
-      Swal.fire("Error", "No se encontró información del usuario.", "error");
-      return;
-    }
     if (!fecha || !hora || !medico || !motivo) {
       Swal.fire("Campos incompletos", "Completa todos los campos.", "warning");
       return;
@@ -86,7 +80,7 @@ function CitasPaciente() {
     const fechaISO = toISODateLocal(fecha);
 
     try {
-      const res = await axios.post("http://localhost:8080/api/citas/crear", {
+      const res = await axios.post(`${API_URL}/api/citas/crear`, {
         usuarioId: usuario.id,
         fecha: fechaISO,
         hora: `${hora}:00`,
@@ -94,56 +88,34 @@ function CitasPaciente() {
         motivo,
       });
 
-      if (res.data.includes("✅")) {
-        await Swal.fire({
-          icon: "success",
-          title: "Cita registrada",
-          text: "Tu cita fue guardada correctamente",
-          confirmButtonColor: "#0284c7",
-          confirmButtonText: "OK",
-        });
-
-        setFecha(null);
-        setHora("");
-        setMedico("");
-        setMotivo("");
-
-        const { data } = await axios.get(
-          `http://localhost:8080/api/citas/usuario/${usuario.id}`
-        );
-        setCitas(data);
-
-        // 🧾 Generar/actualizar PDF del historial del paciente para el admin
-        try {
-          await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
-        } catch (_) {}
-      } else if (res.data.includes("❌")) {
-        Swal.fire({
-          icon: "error",
-          title: "No disponible",
-          text: res.data.replace("❌", ""),
-          confirmButtonColor: "#ef4444",
-        });
-      } else {
-        Swal.fire({
-          icon: "info",
-          title: "Aviso",
-          text: res.data,
-          confirmButtonColor: "#0ea5e9",
-        });
-      }
-    } catch (err) {
-      const msg = err?.response?.data || "No se pudo conectar con el servidor.";
-      Swal.fire({
-        icon: "error",
-        title: msg.toString().includes("❌") ? "Error" : "Error al conectar",
-        text: msg.toString().replace("❌", "").trim(),
-        confirmButtonColor: "#ef4444",
+      await Swal.fire({
+        icon: "success",
+        title: "Cita registrada",
+        text: "Tu cita fue registrada correctamente",
+        confirmButtonColor: "#0284c7",
       });
+
+      // Limpiar
+      setFecha(null);
+      setHora("");
+      setMedico("");
+      setMotivo("");
+
+      // Recargar citas
+      const { data } = await axios.get(`${API_URL}/api/citas/usuario/${usuario.id}`);
+      setCitas(data);
+
+      // Generar historial PDF
+      try {
+        await axios.post(`${API_URL}/api/historial/paciente/${usuario.id}/generar`);
+      } catch (_) {}
+
+    } catch (err) {
+      Swal.fire("Error", "No se pudo registrar la cita.", "error");
     }
   };
 
-  // ✅ Cancelar cita (funcional y elimina del historial)
+  // Cancelar cita
   const cancelarCita = async (id) => {
     const confirm = await Swal.fire({
       title: "¿Cancelar cita?",
@@ -153,59 +125,44 @@ function CitasPaciente() {
       confirmButtonText: "Sí, cancelar",
       cancelButtonText: "No",
       confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
     });
 
-    if (confirm.isConfirmed) {
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axios.delete(`${API_URL}/api/citas/${id}`);
+
+      setCitas((prev) => prev.filter((c) => c.id !== id));
+
+      await Swal.fire({
+        icon: "success",
+        title: "Cita cancelada",
+        confirmButtonColor: "#10b981",
+      });
+
+      // regenerar PDF
       try {
-        const res = await axios.delete(`http://localhost:8080/api/citas/${id}`);
+        await axios.post(`${API_URL}/api/historial/paciente/${usuario.id}/generar`);
+      } catch (_) {}
 
-        if (res.status === 200 || res.status === 204) {
-          // Eliminar la cita del estado sin recargar
-          setCitas((prev) => prev.filter((c) => c.id !== id));
-
-          await Swal.fire({
-            icon: "success",
-            title: "Cita cancelada",
-            text: "Tu cita ha sido eliminada correctamente.",
-            confirmButtonColor: "#10b981",
-          });
-
-          // 🧾 Actualizar PDF del historial en el servidor
-          try {
-            await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
-          } catch (_) {}
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "No se pudo cancelar la cita.",
-            confirmButtonColor: "#ef4444",
-          });
-        }
-      } catch {
-        Swal.fire({
-          icon: "error",
-          title: "Error al conectar",
-          text: "No se pudo conectar con el servidor.",
-          confirmButtonColor: "#ef4444",
-        });
-      }
+    } catch {
+      Swal.fire("Error", "No se pudo cancelar la cita.", "error");
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eaf5ff] to-white py-10 px-5 flex flex-col items-center">
-      {/* Encabezado con animación */}
+
+      {/* Título */}
       <div className="flex items-center gap-3 mb-8 animate__animated animate__fadeInDown">
         <FaStethoscope className="text-sky-600 text-4xl animate-bounce" />
-        <h1 className="text-3xl md:text-4xl font-bold text-sky-700 drop-shadow-sm">
+        <h1 className="text-3xl md:text-4xl font-bold text-sky-700">
           Gestión de Citas Médicas
         </h1>
       </div>
 
-      {/* Tarjeta principal */}
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-5xl animate__animated animate__fadeInUp transition-transform hover:scale-[1.01]">
+      {/* Formulario */}
+      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-5xl animate__animated animate__fadeInUp">
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-5"
@@ -222,8 +179,7 @@ function CitasPaciente() {
               locale="es"
               minDate={new Date()}
               placeholderText="Seleccionar fecha"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all"
-              calendarStartDay={1}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -235,12 +191,12 @@ function CitasPaciente() {
             <select
               value={hora}
               onChange={(e) => setHora(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white transition-all"
+              className="w-full px-4 py-2 border rounded-lg"
             >
               <option value="">Seleccionar hora</option>
               {horasDisponibles.map((h) => (
                 <option key={h} value={h}>
-                  {h} AM
+                  {h}
                 </option>
               ))}
             </select>
@@ -254,7 +210,7 @@ function CitasPaciente() {
             <select
               value={medico}
               onChange={(e) => setMedico(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white transition-all"
+              className="w-full px-4 py-2 border rounded-lg"
             >
               <option value="">Seleccionar médico</option>
               {doctores.map((d) => (
@@ -272,10 +228,10 @@ function CitasPaciente() {
             </label>
             <input
               type="text"
-              placeholder="Ej: Control general"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all"
+              placeholder="Ej: Control general"
+              className="w-full px-4 py-2 border rounded-lg"
             />
           </div>
 
@@ -283,7 +239,7 @@ function CitasPaciente() {
           <div className="col-span-1 md:col-span-2 text-center mt-4">
             <button
               type="submit"
-              className="bg-sky-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-sky-700 transition-transform transform hover:scale-105 shadow-md"
+              className="bg-sky-600 text-white px-8 py-2 rounded-lg hover:bg-sky-700"
             >
               Agendar Cita
             </button>
@@ -292,9 +248,10 @@ function CitasPaciente() {
       </div>
 
       {/* Tabla de citas */}
-      <div className="w-full max-w-5xl mt-10 bg-white rounded-2xl shadow-md p-6 animate__animated animate__fadeInUp">
-        <h2 className="text-xl font-bold text-sky-700 mb-4 flex items-center gap-2">
-          <FaCalendarAlt className="text-sky-500" /> Mis Citas Registradas
+      <div className="w-full max-w-5xl mt-10 bg-white rounded-2xl shadow-md p-6">
+        <h2 className="text-xl font-bold text-sky-700 mb-4">
+          <FaCalendarAlt className="inline text-sky-500 mr-2" />
+          Mis Citas Registradas
         </h2>
 
         {citas.length === 0 ? (
@@ -302,7 +259,7 @@ function CitasPaciente() {
         ) : (
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-sky-100 text-sky-700 text-left">
+              <tr className="bg-sky-100 text-sky-700">
                 <th className="p-3">Fecha</th>
                 <th className="p-3">Hora</th>
                 <th className="p-3">Médico</th>
@@ -312,10 +269,7 @@ function CitasPaciente() {
             </thead>
             <tbody>
               {citas.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b hover:bg-sky-50 transition-all duration-300"
-                >
+                <tr key={c.id} className="border-b hover:bg-sky-50">
                   <td className="p-3">{c.fecha}</td>
                   <td className="p-3">{c.hora}</td>
                   <td className="p-3">{c.medico}</td>
@@ -323,7 +277,7 @@ function CitasPaciente() {
                   <td className="p-3 text-center">
                     <button
                       onClick={() => cancelarCita(c.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-transform transform hover:scale-105"
+                      className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
                     >
                       Cancelar
                     </button>
@@ -337,7 +291,7 @@ function CitasPaciente() {
 
       <button
         onClick={() => navigate("/paciente")}
-        className="mt-8 px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+        className="mt-8 px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
       >
         ← Volver al inicio
       </button>

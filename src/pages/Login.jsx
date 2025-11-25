@@ -9,31 +9,39 @@ function Login() {
   const [mensaje, setMensaje] = useState("");
   const navigate = useNavigate();
 
+  // ✔ Usamos la URL del backend desde el .env
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:8080/api/auth/login", {
+      const res = await axios.post(`${API_URL}/api/auth/login`, {
         correo,
         password,
       });
 
-      // ✅ Si el backend devuelve correctamente el JSON
       if (res.status === 200 && res.data && res.data.mensaje?.includes("exitoso")) {
         const data = res.data;
         const tipo = data.tipo;
 
-        // Guardar por rol para permitir sesiones simultáneas
+        // Guardar usuario por rol
         if (tipo === "ADMIN") {
           localStorage.setItem("adminUsuario", JSON.stringify(data));
         } else if (tipo === "PACIENTE") {
           localStorage.setItem("pacienteUsuario", JSON.stringify(data));
         }
-        // Mantener compatibilidad
+
+        // Guardado general
         localStorage.setItem("usuario", JSON.stringify(data));
 
-        // Redirección según rol
-        const destino = tipo === "ADMIN" ? "/admin" : tipo === "PACIENTE" ? "/paciente" : "/";
+        // Redirección
+        const destino =
+          tipo === "ADMIN"
+            ? "/admin"
+            : tipo === "PACIENTE"
+            ? "/paciente"
+            : "/";
 
         setMensaje("✅ Inicio de sesión exitoso");
         setTimeout(() => navigate(destino), 800);
@@ -52,7 +60,6 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#eef6ff]">
       <div className="bg-white shadow-lg rounded-2xl p-10 w-full max-w-md text-center">
-        {/* --- Logo --- */}
         <img
           src={logo}
           alt="Logo"
@@ -72,7 +79,7 @@ function Login() {
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none text-gray-800 placeholder-gray-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none text-gray-800"
             />
           </div>
 
@@ -86,7 +93,7 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none text-gray-800 placeholder-gray-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none text-gray-800"
             />
           </div>
 
@@ -98,7 +105,6 @@ function Login() {
           </button>
         </form>
 
-        {/* --- Mensaje de estado --- */}
         {mensaje && (
           <p
             className={`mt-4 text-sm font-medium ${

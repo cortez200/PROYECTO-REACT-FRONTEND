@@ -28,6 +28,8 @@ function parse12hTo24h(hhmm, ampm) {
 
 export default function RecordatoriosPaciente() {
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const [usuario, setUsuario] = useState(null);
   const [medicina, setMedicina] = useState("");
   const [dosis, setDosis] = useState("");
@@ -36,22 +38,34 @@ export default function RecordatoriosPaciente() {
   const [ampm, setAmpm] = useState("AM");
   const [recordatorios, setRecordatorios] = useState([]);
 
+  // Obtener usuario
   useEffect(() => {
     const u =
       JSON.parse(localStorage.getItem("pacienteUsuario")) ||
-      JSON.parse(localStorage.getItem("usuario")) ||
-      JSON.parse(localStorage.getItem("user"));
+      JSON.parse(localStorage.getItem("usuario"));
+
     setUsuario(u || null);
   }, []);
 
+  // Cargar recordatorios
   useEffect(() => {
     if (!usuario?.id) return;
+
     axios
-      .get(`http://localhost:8080/api/recordatorios/usuario/${usuario.id}`)
+      .get(`${API_URL}/api/recordatorios/usuario/${usuario.id}`)
       .then((res) => setRecordatorios(res.data || []))
       .catch(() => setRecordatorios([]));
   }, [usuario]);
 
+  // Recargar lista
+  const recargar = async () => {
+    const { data } = await axios.get(
+      `${API_URL}/api/recordatorios/usuario/${usuario.id}`
+    );
+    setRecordatorios(data || []);
+  };
+
+  // Agregar recordatorio
   const handleAgregar = async () => {
     if (!usuario?.id) {
       Swal.fire("Error", "No se encontró el usuario.", "error");
@@ -64,6 +78,7 @@ export default function RecordatoriosPaciente() {
 
     const fechaISO = fecha.toISOString().split("T")[0];
     const h24 = parse12hTo24h(hora, ampm);
+
     const body = {
       usuarioId: usuario.id,
       descripcion: `${medicina} — ${dosis}`,
@@ -71,34 +86,30 @@ export default function RecordatoriosPaciente() {
     };
 
     try {
-      const res = await axios.post("http://localhost:8080/api/recordatorios", body);
+      const res = await axios.post(`${API_URL}/api/recordatorios`, body);
+
       if (res.status === 200 || res.status === 201) {
         Swal.fire("✅ Éxito", "Recordatorio creado correctamente.", "success");
+
         setMedicina("");
         setDosis("");
         setFecha(null);
         setHora("08:00");
         setAmpm("AM");
+
         recargar();
-        // 🧾 Generar/actualizar el PDF del historial para que el admin vea el cambio
+
+        // Regenerar historial del paciente
         try {
-          await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
-        } catch (_) {
-          // Silenciar errores de generación para no bloquear la UX del paciente
-        }
+          await axios.post(`${API_URL}/api/historial/paciente/${usuario.id}/generar`);
+        } catch (_) {}
       }
     } catch {
       Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
     }
   };
 
-  const recargar = async () => {
-    const { data } = await axios.get(
-      `http://localhost:8080/api/recordatorios/usuario/${usuario.id}`
-    );
-    setRecordatorios(data || []);
-  };
-
+  // Borrar recordatorio
   const borrar = async (id) => {
     const confirm = await Swal.fire({
       icon: "warning",
@@ -112,7 +123,8 @@ export default function RecordatoriosPaciente() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:8080/api/recordatorios/${id}`);
+      await axios.delete(`${API_URL}/api/recordatorios/${id}`);
+
       setRecordatorios((prev) => prev.filter((r) => r.id !== id));
       Swal.fire("Eliminado", "Recordatorio eliminado correctamente.", "success");
     } catch {
@@ -120,9 +132,11 @@ export default function RecordatoriosPaciente() {
     }
   };
 
+  // Marcar tomado
   const marcarTomado = async (id) => {
     try {
-      await axios.put(`http://localhost:8080/api/recordatorios/${id}/tomado`);
+      await axios.put(`${API_URL}/api/recordatorios/${id}/tomado`);
+
       Swal.fire({
         icon: "success",
         title: "✅ Medicamento tomado",
@@ -130,7 +144,7 @@ export default function RecordatoriosPaciente() {
         confirmButtonColor: "#22c55e",
       });
 
-      // 🎉 Efecto de confeti
+      // Efecto confeti
       confetti({
         particleCount: 120,
         spread: 80,
@@ -140,9 +154,9 @@ export default function RecordatoriosPaciente() {
 
       recargar();
 
-      // 🧾 Actualizar el PDF del historial en el servidor
+      // Regenerar PDF historial
       try {
-        await axios.post(`http://localhost:8080/api/historial/paciente/${usuario.id}/generar`);
+        await axios.post(`${API_URL}/api/historial/paciente/${usuario.id}/generar`);
       } catch (_) {}
     } catch {
       Swal.fire("Error", "No se pudo actualizar el recordatorio.", "error");
@@ -152,6 +166,7 @@ export default function RecordatoriosPaciente() {
   return (
     <div className="min-h-screen bg-[#f6f9ff]">
       <div className="max-w-5xl mx-auto px-4 py-6">
+
         {/* Encabezado */}
         <motion.div
           className="flex flex-col items-center mb-8 text-center"
@@ -183,15 +198,17 @@ export default function RecordatoriosPaciente() {
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-500"
               />
             </div>
+
             <div>
               <label className="block text-gray-700 font-medium mb-1">Dosis</label>
               <input
                 value={dosis}
                 onChange={(e) => setDosis(e.target.value)}
                 placeholder="Ej: 50 mg"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-500"
+                className="w-full px-4 py-2 border rounded-lg focus:ring"},
               />
             </div>
+
             <div>
               <label className="block text-gray-700 font-medium mb-1">Fecha</label>
               <DatePicker
@@ -204,6 +221,7 @@ export default function RecordatoriosPaciente() {
                 minDate={new Date()}
               />
             </div>
+
             <div>
               <label className="block text-gray-700 font-medium mb-1">Hora</label>
               <div className="flex gap-3">
@@ -224,6 +242,7 @@ export default function RecordatoriosPaciente() {
               </div>
             </div>
           </div>
+
           <div className="mt-6 text-center">
             <button
               onClick={handleAgregar}
@@ -239,6 +258,7 @@ export default function RecordatoriosPaciente() {
           <h3 className="text-lg font-bold text-sky-700 mb-4 text-center">
             Mis recordatorios
           </h3>
+
           {recordatorios.length === 0 ? (
             <p className="text-gray-500 text-center">Aún no tienes recordatorios.</p>
           ) : (
@@ -250,11 +270,13 @@ export default function RecordatoriosPaciente() {
                   <th className="p-3 text-center">Acciones</th>
                 </tr>
               </thead>
+
               <tbody>
                 {recordatorios.map((r) => (
                   <tr key={r.id} className="border-b hover:bg-sky-50 transition">
                     <td className="p-3">{r.descripcion}</td>
                     <td className="p-3">{r.fechaHora?.replace("T", " ")}</td>
+
                     <td className="p-3 text-center space-x-2">
                       <button
                         onClick={() => marcarTomado(r.id)}
@@ -268,6 +290,7 @@ export default function RecordatoriosPaciente() {
                         <FaCheckCircle className="inline mr-1" />
                         {r.tomado ? "Tomado" : "Marcar Tomado"}
                       </button>
+
                       <button
                         onClick={() => borrar(r.id)}
                         className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
@@ -279,6 +302,7 @@ export default function RecordatoriosPaciente() {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           )}
         </div>
@@ -291,6 +315,7 @@ export default function RecordatoriosPaciente() {
             <FaArrowLeft /> Volver al inicio
           </button>
         </div>
+
       </div>
     </div>
   );

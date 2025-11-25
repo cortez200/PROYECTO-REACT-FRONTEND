@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; 
 import AdminLayout from "../layout/AdminLayout";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -16,7 +16,6 @@ export default function AdminPacientes() {
 
   const [usuarios, setUsuarios] = useState([]);
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
-
   const [busqueda, setBusqueda] = useState("");
 
   const [openModal, setOpenModal] = useState(false);
@@ -30,9 +29,12 @@ export default function AdminPacientes() {
     tipo: "PACIENTE"
   });
 
+  // ✔ Usamos backend en producción (Render)
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Cargar usuarios del backend
   const cargarUsuarios = () => {
-    axios.get("http://localhost:8080/api/usuarios")
+    axios.get(`${API_URL}/api/usuarios`)
       .then((res) => {
         const data = res.data.map(u => ({
           id: u.id,
@@ -43,7 +45,7 @@ export default function AdminPacientes() {
         }));
         setUsuarios(data);
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log("Error cargando usuarios:", err));
   };
 
   useEffect(() => {
@@ -65,17 +67,25 @@ export default function AdminPacientes() {
     { field: "id", headerName: "ID", width: 80 },
     { field: "nombre", headerName: "Nombre", width: 240, renderCell: (params) => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Avatar sx={{ bgcolor: '#0284c7', width: 28, height: 28 }}>{(params.row.nombre || 'P').charAt(0).toUpperCase()}</Avatar>
-        <span style={{ color: '#0f172a', fontWeight: 500 }}>{params.row.nombre}</span>
+        <Avatar sx={{ bgcolor: '#0284c7', width: 28, height: 28 }}>
+          {(params.row.nombre || 'P').charAt(0).toUpperCase()}
+        </Avatar>
+        <span style={{ color: '#0f172a', fontWeight: 500 }}>
+          {params.row.nombre}
+        </span>
       </div>
     ) },
     { field: "correo", headerName: "Correo", width: 260 },
     { field: "tipo", headerName: "Tipo", width: 140, renderCell: (params) => (
-      <Chip size="small" label={params.row.tipo} sx={{
-        bgcolor: params.row.tipo === 'ADMIN' ? '#dbeafe' : '#dcfce7',
-        color: params.row.tipo === 'ADMIN' ? '#1e3a8a' : '#065f46',
-        fontWeight: 600
-      }} />
+      <Chip 
+        size="small" 
+        label={params.row.tipo} 
+        sx={{
+          bgcolor: params.row.tipo === 'ADMIN' ? '#dbeafe' : '#dcfce7',
+          color: params.row.tipo === 'ADMIN' ? '#1e3a8a' : '#065f46',
+          fontWeight: 600
+        }} 
+      />
     ) },
 
     {
@@ -83,7 +93,11 @@ export default function AdminPacientes() {
       headerName: "Editar",
       width: 120,
       renderCell: (params) => (
-        <Button variant="contained" onClick={() => abrirEditar(params.row)} sx={{ backgroundColor: '#0284c7', '&:hover': { backgroundColor: '#0369a1' } }}>
+        <Button 
+          variant="contained" 
+          onClick={() => abrirEditar(params.row)} 
+          sx={{ backgroundColor: '#0284c7', '&:hover': { backgroundColor: '#0369a1' } }}
+        >
           Editar
         </Button>
       ),
@@ -127,13 +141,13 @@ export default function AdminPacientes() {
   // Guardar o actualizar usuario
   const guardarUsuario = () => {
     if (editMode) {
-      axios.put(`http://localhost:8080/api/usuarios/${usuarioActual.id}`, usuarioActual)
+      axios.put(`${API_URL}/api/usuarios/${usuarioActual.id}`, usuarioActual)
         .then(() => {
           setOpenModal(false);
           cargarUsuarios();
         });
     } else {
-      axios.post("http://localhost:8080/api/usuarios", usuarioActual)
+      axios.post(`${API_URL}/api/usuarios`, usuarioActual)
         .then(() => {
           setOpenModal(false);
           cargarUsuarios();
@@ -144,7 +158,7 @@ export default function AdminPacientes() {
   // Eliminar usuario
   const eliminarUsuario = (id) => {
     if (confirm("¿Seguro que deseas eliminar este usuario?")) {
-      axios.delete(`http://localhost:8080/api/usuarios/${id}`)
+      axios.delete(`${API_URL}/api/usuarios/${id}`)
         .then(() => cargarUsuarios());
     }
   };

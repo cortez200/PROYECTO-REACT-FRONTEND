@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react"; 
 import AdminLayout from "../layout/AdminLayout";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -42,10 +42,13 @@ export default function AdminCitas() {
     usuarioId: "",
   });
 
-  // 🔹 Cargar citas (todas)
+  // ✔ API base desde .env
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // 🔹 Cargar citas
   const cargarCitas = () => {
     axios
-      .get("http://localhost:8080/api/citas")
+      .get(`${API_URL}/api/citas`)
       .then((res) => {
         const data = res.data.map((c) => ({
           id: c.id,
@@ -58,17 +61,17 @@ export default function AdminCitas() {
         }));
         setCitas(data);
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log("Error cargando citas:", err));
   };
 
-  // 🔹 Cargar usuarios para el combo (paciente)
+  // 🔹 Cargar usuarios (pacientes)
   const cargarUsuarios = () => {
     axios
-      .get("http://localhost:8080/api/usuarios")
+      .get(`${API_URL}/api/usuarios`)
       .then((res) => {
         setUsuarios(res.data);
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log("Error cargando usuarios:", err));
   };
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function AdminCitas() {
     cargarUsuarios();
   }, []);
 
-  // 🔍 Filtrar citas por médico, paciente, motivo
+  // 🔍 Filtrar citas
   useEffect(() => {
     const filtradas = citas.filter(
       (c) =>
@@ -87,7 +90,7 @@ export default function AdminCitas() {
     setCitasFiltradas(filtradas);
   }, [busqueda, citas]);
 
-  // Columnas de la tabla
+  // Columnas de tabla
   const columns = [
     { field: "id", headerName: "ID", width: 80 },
     { field: "fecha", headerName: "Fecha", width: 130 },
@@ -98,8 +101,12 @@ export default function AdminCitas() {
       width: 240,
       renderCell: (params) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Avatar sx={{ bgcolor: '#0ea5e9', width: 28, height: 28 }}>{(params.row.paciente || 'P').charAt(0).toUpperCase()}</Avatar>
-          <span style={{ color: '#0f172a', fontWeight: 500 }}>{params.row.paciente}</span>
+          <Avatar sx={{ bgcolor: '#0ea5e9', width: 28, height: 28 }}>
+            {(params.row.paciente || 'P').charAt(0).toUpperCase()}
+          </Avatar>
+          <span style={{ color: '#0f172a', fontWeight: 500 }}>
+            {params.row.paciente}
+          </span>
         </div>
       ),
     },
@@ -109,7 +116,11 @@ export default function AdminCitas() {
       headerName: "Motivo",
       width: 220,
       renderCell: (params) => (
-        <Chip size="small" label={params.row.motivo} sx={{ bgcolor: '#f0f9ff', color: '#0f172a', fontWeight: 500 }} />
+        <Chip 
+          size="small" 
+          label={params.row.motivo} 
+          sx={{ bgcolor: '#f0f9ff', color: '#0f172a', fontWeight: 500 }} 
+        />
       ),
     },
     {
@@ -117,7 +128,11 @@ export default function AdminCitas() {
       headerName: "Editar",
       width: 120,
       renderCell: (params) => (
-        <Button variant="contained" onClick={() => abrirEditar(params.row)} sx={{ backgroundColor: '#0284c7', '&:hover': { backgroundColor: '#0369a1' } }}>
+        <Button 
+          variant="contained" 
+          onClick={() => abrirEditar(params.row)} 
+          sx={{ backgroundColor: '#0284c7', '&:hover': { backgroundColor: '#0369a1' } }}
+        >
           Editar
         </Button>
       ),
@@ -138,7 +153,7 @@ export default function AdminCitas() {
     },
   ];
 
-  // 🟢 Abrir modal para crear
+  // 🟢 Crear cita
   const abrirCrear = () => {
     setEditMode(false);
     setCitaActual({
@@ -152,7 +167,7 @@ export default function AdminCitas() {
     setOpenModal(true);
   };
 
-  // 🟠 Abrir modal para editar
+  // 🟠 Editar cita
   const abrirEditar = (cita) => {
     setEditMode(true);
     setCitaActual({
@@ -166,7 +181,7 @@ export default function AdminCitas() {
     setOpenModal(true);
   };
 
-  // 💾 Guardar (crear o actualizar)
+  // 💾 Guardar cambios
   const guardarCita = () => {
     const body = {
       usuarioId: citaActual.usuarioId,
@@ -176,53 +191,32 @@ export default function AdminCitas() {
       motivo: citaActual.motivo,
     };
 
-    if (!citaActual.usuarioId) {
-      alert("Debes seleccionar un paciente (usuario).");
-      return;
-    }
-
-    if (!citaActual.fecha || !citaActual.hora || !citaActual.medico) {
-      alert("Fecha, hora y médico son obligatorios.");
-      return;
-    }
-
     if (editMode) {
-      // 🔁 ACTUALIZAR
       axios
-        .put(`http://localhost:8080/api/citas/${citaActual.id}`, body)
+        .put(`${API_URL}/api/citas/${citaActual.id}`, body)
         .then(() => {
           setOpenModal(false);
           cargarCitas();
         })
-        .catch((err) => {
-          console.error(err);
-          alert("Error al actualizar la cita");
-        });
+        .catch(() => alert("Error al actualizar cita"));
     } else {
-      // ➕ CREAR
       axios
-        .post("http://localhost:8080/api/citas/crear", body)
+        .post(`${API_URL}/api/citas/crear`, body)
         .then(() => {
           setOpenModal(false);
           cargarCitas();
         })
-        .catch((err) => {
-          console.error(err);
-          alert("Error al crear la cita");
-        });
+        .catch(() => alert("Error al crear cita"));
     }
   };
 
-  // 🗑 Eliminar cita
+  // 🗑 Eliminar
   const eliminarCita = (id) => {
-    if (confirm("¿Seguro que deseas eliminar esta cita?")) {
+    if (confirm("¿Seguro de eliminar la cita?")) {
       axios
-        .delete(`http://localhost:8080/api/citas/${id}`)
+        .delete(`${API_URL}/api/citas/${id}`)
         .then(() => cargarCitas())
-        .catch((err) => {
-          console.error(err);
-          alert("Error al eliminar la cita");
-        });
+        .catch(() => alert("Error eliminando cita"));
     }
   };
 
@@ -232,10 +226,11 @@ export default function AdminCitas() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div>
             <h2 style={{ margin: 0, color: '#0ea5e9' }}>Gestión de Citas</h2>
-            <p style={{ margin: 0, color: '#64748b' }}>Administra todas las citas registradas en el sistema.</p>
+            <p style={{ margin: 0, color: '#64748b' }}>
+              Administra todas las citas registradas en el sistema.
+            </p>
           </div>
 
-          {/* BOTÓN CREAR */}
           <Button
             variant="contained"
             sx={{ backgroundColor: '#0284c7', '&:hover': { backgroundColor: '#0369a1' } }}
@@ -245,7 +240,6 @@ export default function AdminCitas() {
           </Button>
         </div>
 
-        {/* BUSCADOR */}
         <TextField
           label="Buscar por paciente, médico o motivo..."
           variant="outlined"
@@ -256,7 +250,6 @@ export default function AdminCitas() {
           InputProps={{ startAdornment: <InputAdornment position="start">🔎</InputAdornment> }}
         />
 
-        {/* TABLA */}
         <div style={{ height: 500, width: "100%" }}>
           <DataGrid rows={citasFiltradas} columns={columns} pageSize={5} sx={{
             border: '1px solid #e5e7eb',
@@ -266,6 +259,7 @@ export default function AdminCitas() {
           }} />
         </div>
       </Paper>
+      
 
       {/* MODAL */}
       <Dialog
@@ -273,31 +267,20 @@ export default function AdminCitas() {
         onClose={() => setOpenModal(false)}
         fullWidth
         maxWidth="lg"
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            width: { xs: '95vw', sm: '900px', md: '1040px' }
-          }
-        }}
       >
-        <DialogTitle sx={{ bgcolor: "#0284c7", color: "#fff", borderTopLeftRadius: 12, borderTopRightRadius: 12, py: 3 }}>
+        <DialogTitle sx={{ bgcolor: "#0284c7", color: "#fff" }}>
           {editMode ? "Editar Cita" : "Agregar Cita"}
         </DialogTitle>
 
-        <DialogContent sx={{ mt: 2, maxHeight: "80vh", overflowY: "auto", px: 4,
-          '& .MuiFormLabel-root': { display: 'none' },
-          '& .MuiOutlinedInput-notchedOutline legend': { display: 'none' }
-        }}>
+        <DialogContent sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Paciente</div>
               <TextField
                 select
-                label=""
-                value={citaActual.usuarioId || ""}
-                onChange={(e) => setCitaActual({ ...citaActual, usuarioId: e.target.value })}
                 fullWidth
-                InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: "#64748b" }} /></InputAdornment> }}
+                label="Paciente"
+                value={citaActual.usuarioId}
+                onChange={(e) => setCitaActual({ ...citaActual, usuarioId: e.target.value })}
               >
                 {usuarios.map((u) => (
                   <MenuItem key={u.id} value={u.id}>
@@ -306,62 +289,61 @@ export default function AdminCitas() {
                 ))}
               </TextField>
             </Grid>
+
             <Grid item xs={12}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Médico</div>
               <TextField
                 select
-                label=""
+                fullWidth
+                label="Médico"
                 value={citaActual.medico}
                 onChange={(e) => setCitaActual({ ...citaActual, medico: e.target.value })}
-                fullWidth
-                InputProps={{ startAdornment: <InputAdornment position="start"><LocalHospitalIcon sx={{ color: "#64748b" }} /></InputAdornment> }}
               >
                 <MenuItem value="Dr. Luis Paredes">Dr. Luis Paredes</MenuItem>
                 <MenuItem value="Dra. Andrea Ríos">Dra. Andrea Ríos</MenuItem>
                 <MenuItem value="Dr. Julio Medina">Dr. Julio Medina</MenuItem>
               </TextField>
             </Grid>
+
             <Grid item xs={12}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Fecha</div>
               <TextField
-                label=""
+                label="Fecha"
                 type="date"
+                fullWidth
                 value={citaActual.fecha}
                 onChange={(e) => setCitaActual({ ...citaActual, fecha: e.target.value })}
-                fullWidth
-                InputProps={{ startAdornment: <InputAdornment position="start"><CalendarTodayIcon sx={{ color: "#64748b" }} /></InputAdornment> }}
               />
             </Grid>
+
             <Grid item xs={12}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Hora</div>
               <TextField
-                label=""
+                label="Hora"
                 type="time"
+                fullWidth
                 value={citaActual.hora}
                 onChange={(e) => setCitaActual({ ...citaActual, hora: e.target.value })}
-                fullWidth
-                InputProps={{ startAdornment: <InputAdornment position="start"><AccessTimeIcon sx={{ color: "#64748b" }} /></InputAdornment> }}
               />
             </Grid>
+
             <Grid item xs={12}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Motivo</div>
               <TextField
-                label=""
-                value={citaActual.motivo}
-                onChange={(e) => setCitaActual({ ...citaActual, motivo: e.target.value })}
+                label="Motivo"
                 fullWidth
                 multiline
-                minRows={3}
-                InputProps={{ startAdornment: <InputAdornment position="start"><DescriptionIcon sx={{ color: "#64748b" }} /></InputAdornment> }}
+                rows={3}
+                value={citaActual.motivo}
+                onChange={(e) => setCitaActual({ ...citaActual, motivo: e.target.value })}
               />
             </Grid>
           </Grid>
+
           <Divider sx={{ my: 2 }} />
         </DialogContent>
 
-        <DialogActions sx={{ px: 4, py: 3 }}>
-          <Button variant="outlined" onClick={() => setOpenModal(false)} sx={{ borderColor: "#94a3b8", color: "#0f172a" }}>Cancelar</Button>
-          <Button variant="contained" onClick={guardarCita} sx={{ bgcolor: "#0284c7", "&:hover": { bgcolor: "#0369a1" } }}>
+        <DialogActions>
+          <Button onClick={() => setOpenModal(false)} variant="outlined">
+            Cancelar
+          </Button>
+          <Button onClick={guardarCita} variant="contained" sx={{ bgcolor: "#0284c7" }}>
             {editMode ? "Actualizar" : "Guardar"}
           </Button>
         </DialogActions>
