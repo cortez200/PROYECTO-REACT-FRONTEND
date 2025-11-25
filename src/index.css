@@ -1,11 +1,12 @@
-/* --- Activar Tailwind --- */
+/* --- Importar fuente Inter (DEBE ir primero) --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Activar Tailwind --- */ 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- Restaurar tus estilos globales originales --- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
+/* --- Estilos globales --- */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -151,6 +152,7 @@ textarea {
 input::placeholder {
   color: #9ca3af !important; /* gris suave */
 }
+
 /* --- Tema Admin Profesional --- */
 .admin-main {
   background:
@@ -166,6 +168,7 @@ input::placeholder {
   background: #ffffff;
   box-shadow: 0 8px 28px rgba(2, 132, 199, 0.08);
 }
+
 .admin-card::before {
   content: "";
   position: absolute;
@@ -183,6 +186,7 @@ input::placeholder {
   color: #0ea5e9;
   font-weight: 700;
 }
+
 .admin-section-subtitle {
   margin: 0;
   color: #64748b;
