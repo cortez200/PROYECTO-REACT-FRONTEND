@@ -1,10 +1,11 @@
-import { Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PacienteDashboard from "./pages/PacienteDashboard";
+
 import CitasPaciente from "./pages/paciente/CitasPaciente";
 import RecordatoriosPaciente from "./pages/paciente/RecordatoriosPaciente";
 import HistorialPaciente from "./pages/paciente/HistorialPaciente";
@@ -23,17 +24,19 @@ function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      <Route path="/paciente" element={<PacienteDashboard />} />
-      <Route path="/paciente/citas" element={<CitasPaciente />} />
-      <Route path="/paciente/recordatorios" element={<RecordatoriosPaciente />} />
-      <Route path="/paciente/historial" element={<HistorialPaciente />} />
-      <Route path="/paciente/familiares" element={<FamiliaresPaciente />} />
-    </Routes>
+        <Route path="/paciente" element={<PacienteDashboard />} />
+        <Route path="/paciente/citas" element={<CitasPaciente />} />
+        <Route path="/paciente/recordatorios" element={<RecordatoriosPaciente />} />
+        <Route path="/paciente/historial" element={<HistorialPaciente />} />
+        <Route path="/paciente/familiares" element={<FamiliaresPaciente />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
