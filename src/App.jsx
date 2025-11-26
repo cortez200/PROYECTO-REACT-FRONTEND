@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 
 import Home from "./pages/Home";
@@ -24,19 +24,17 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-        <Route path="/paciente" element={<PacienteDashboard />} />
-        <Route path="/paciente/citas" element={<CitasPaciente />} />
-        <Route path="/paciente/recordatorios" element={<RecordatoriosPaciente />} />
-        <Route path="/paciente/historial" element={<HistorialPaciente />} />
-        <Route path="/paciente/familiares" element={<FamiliaresPaciente />} />
-      </Routes>
-    </BrowserRouter>
+      <Route path="/paciente" element={<PacienteDashboard />} />
+      <Route path="/paciente/citas" element={<CitasPaciente />} />
+      <Route path="/paciente/recordatorios" element={<RecordatoriosPaciente />} />
+      <Route path="/paciente/historial" element={<HistorialPaciente />} />
+      <Route path="/paciente/familiares" element={<FamiliaresPaciente />} />
+    </Routes>
   );
 }
 
